@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Teddy Catch Challenge</title>
+
+<style>
+body {
+    margin: 0;
+    height: 100vh;
+    overflow: hidden;
+    background: linear-gradient(135deg,#ff9a9e,#fad0c4);
+    font-family: Arial, sans-serif;
+}
+
+/* ---------------- GAME SCREEN ---------------- */
+
+#gameScreen {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+/* Score */
+#scoreBoard {
+    position: fixed;
+    top: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 22px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 0 0 8px rgba(0,0,0,0.4);
+    z-index: 20;
+}
+
+/* Catcher wrapper */
+#catcherBox {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 200px;
+    text-align: center;
+    z-index: 10;
+}
+
+#catcherName {
+    display: block;
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    margin-bottom: 6px;
+    text-shadow: 0 0 8px rgba(0,0,0,0.4);
+}
+
+#catcher {
+    width: 100%;
+}
+
+/* Teddy */
+.teddy {
+    position: absolute;
+    top: -150px;
+    animation: fall linear forwards;
+}
+
+@keyframes fall {
+    to {
+        top: 110%;
+    }
+}
+
+/* ---------------- COUNTDOWN ---------------- */
+
+#countdownScreen {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    justify-content: center;
+    align-items: center;
+    font-size: 6rem;
+    color: white;
+    font-weight: bold;
+    z-index: 50;
+}
+
+/* ---------------- MESSAGE ---------------- */
+
+#messageScreen {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg,#ff9a9e,#fad0c4);
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+#messageScreen h2 {
+    font-size: 3rem;
+    color: white;
+}
+
+/* ---------------- FINAL SCREEN ---------------- */
+
+#happyScreen {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg,#ff9a9e,#fad0c4);
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+#happyScreen h1 {
+    font-size: 4rem;
+    color: white;
+    text-shadow: 0 0 20px rgba(0,0,0,0.3);
+    animation: pop 1.5s ease forwards;
+}
+
+@keyframes pop {
+    from {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<!-- GAME -->
+<div id="gameScreen">
+    <div id="scoreBoard">Caught: 0 / 5</div>
+
+    <div id="catcherBox">
+        <span id="catcherName">My Teddy 💛</span>
+        <img id="catcher"
+        src="https://cdn-icons-png.flaticon.com/512/3082/3082031.png">
+    </div>
+</div>
+
+<!-- COUNTDOWN -->
+<div id="countdownScreen">3</div>
+
+<!-- MESSAGE -->
+<div id="messageScreen">
+    <h2>You caught 5 Teddies! 🧸✨</h2>
+</div>
+
+<!-- FINAL -->
+<div id="happyScreen">
+    <h1>Happy Teddy Day 🧸💛</h1>
+</div>
+
+<script>
+const teddyImg =
+"https://pngimg.com/uploads/teddy_bear/teddy_bear_PNG11.png";
+
+const gameScreen = document.getElementById("gameScreen");
+const catcherBox = document.getElementById("catcherBox");
+const scoreBoard = document.getElementById("scoreBoard");
+
+const countdownScreen = document.getElementById("countdownScreen");
+const messageScreen = document.getElementById("messageScreen");
+const happyScreen = document.getElementById("happyScreen");
+
+let caught = 0;
+let gameOver = false;
+let spawnLoop;
+
+/* Move trolley */
+document.addEventListener("mousemove", e => {
+    catcherBox.style.left = e.clientX + "px";
+});
+document.addEventListener("touchmove", e => {
+    catcherBox.style.left = e.touches[0].clientX + "px";
+});
+
+/* Spawn teddy */
+function createTeddy() {
+    if (gameOver) return;
+
+    const teddy = document.createElement("img");
+    teddy.src = teddyImg;
+    teddy.className = "teddy";
+
+    const size = 90 + Math.random() * 80;
+    teddy.style.width = size + "px";
+
+    teddy.style.left = Math.random() * window.innerWidth + "px";
+    teddy.style.animationDuration =
+        3 + Math.random() * 3 + "s";
+
+    gameScreen.appendChild(teddy);
+
+    const checkCollision = setInterval(() => {
+
+        const t = teddy.getBoundingClientRect();
+        const c = catcherBox.getBoundingClientRect();
+
+        if (
+            t.bottom > c.top &&
+            t.left < c.right &&
+            t.right > c.left
+        ) {
+            caught++;
+            scoreBoard.textContent =
+                `Caught: ${caught} / 5`;
+
+            teddy.remove();
+            clearInterval(checkCollision);
+
+            if (caught === 5) finishGame();
+        }
+
+        if (t.top > window.innerHeight) {
+            teddy.remove();
+            clearInterval(checkCollision);
+        }
+
+    }, 20);
+}
+
+/* Start spawning */
+spawnLoop = setInterval(createTeddy, 1000);
+
+/* Finish game flow */
+function finishGame() {
+    gameOver = true;
+    clearInterval(spawnLoop);
+
+    // remove leftover teddies
+    document.querySelectorAll(".teddy")
+        .forEach(t => t.remove());
+
+    // show countdown
+    countdownScreen.style.display = "flex";
+    let count = 3;
+    countdownScreen.textContent = count;
+
+    const timer = setInterval(() => {
+        count--;
+        countdownScreen.textContent = count;
+
+        if (count === 0) {
+            clearInterval(timer);
+            countdownScreen.style.display = "none";
+
+            // show message
+            messageScreen.style.display = "flex";
+
+            setTimeout(() => {
+                messageScreen.style.display = "none";
+                gameScreen.style.display = "none";
+                happyScreen.style.display = "flex";
+            }, 2000);
+        }
+    }, 1000);
+}
+</script>
+
+</body>
+</html>
+
+
+
